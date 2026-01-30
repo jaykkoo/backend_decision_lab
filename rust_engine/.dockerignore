@@ -1,0 +1,27 @@
+# Rust
+target/
+Cargo.lock.bak
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests / docs
+tests/
+docs/
+
+# Python / Node parasites (hérités du repo)
+.env
+.env.*
+node_modules/
+__pycache__/
+*.pyc
+venv/
