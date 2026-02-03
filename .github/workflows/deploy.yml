@@ -1,0 +1,96 @@
+name: Deploy Blue/Green (Zero Downtime)
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: registry.digitalocean.com/decision-lab
+  NAMESPACE: decision-lab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # ------------------------
+    # Docker login
+    # ------------------------
+    - name: Login to DigitalOcean Registry
+      run: echo "${{ secrets.DO_REGISTRY_TOKEN }}" | docker login $REGISTRY -u do --password-stdin
+
+    # ------------------------
+    # Build & Push images
+    # ------------------------
+    - name: Build & Push Django
+      run: |
+        docker build -t $REGISTRY/django:${{ github.sha }} ./backend
+        docker push $REGISTRY/django:${{ github.sha }}
+
+    - name: Build & Push Rust Worker
+      run: |
+        docker build -t $REGISTRY/rust-worker:${{ github.sha }} ./rust_engine
+        docker push $REGISTRY/rust-worker:${{ github.sha }}
+
+    # ------------------------
+    # Setup kubectl
+    # ------------------------
+    - name: Setup kubeconfig
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+
+    # ------------------------
+    # Create / Update Secrets
+    # ------------------------
+    - name: Apply Kubernetes Secrets
+      run: |
+        kubectl create secret generic backend-secrets \
+          --namespace $NAMESPACE \
+          --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+          --from-literal=REDIS_URL="${{ secrets.REDIS_URL }}" \
+          --from-literal=DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    # ------------------------
+    # Deploy GREEN
+    # ------------------------
+    - name: Deploy Green
+      run: |
+        sed "s|IMAGE_TAG|${{ github.sha }}|g" k8s/green/django-deployment.yaml | kubectl apply -f -
+        kubectl rollout status deployment/django-green -n $NAMESPACE
+
+    - name: Deploy Rust Worker
+      run: |
+        sed "s|IMAGE_TAG|${{ github.sha }}|g" k8s/workers/deployment.yaml | kubectl apply -f -
+
+
+    # ------------------------
+    # Healthcheck
+    # ------------------------
+    - name: Healthcheck Green
+      run: |
+        kubectl run curl --rm -i --restart=Never --image=curlimages/curl \
+          -- curl http://django-green.$NAMESPACE.svc.cluster.local/health
+    
+
+    - name: Rollback to Blue if Healthcheck Failed
+      if: failure()
+      run: |
+        echo "❌ Healthcheck failed – rollback to BLUE"
+        kubectl patch service django \
+          -n decision-lab \
+          -p '{"spec":{"selector":{"app":"django","version":"blue"}}}'
+
+    # ------------------------
+    # Switch Blue → Green
+    # ------------------------
+    - name: Switch Traffic to Green
+      run: |
+        kubectl patch service django \
+          -n $NAMESPACE \
+          -p '{"spec":{"selector":{"app":"django","version":"green"}}}'
+          exit 1

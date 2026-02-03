@@ -46,7 +46,7 @@ class JobCompleteView(APIView):
         JobRun.objects.create(
             job=job,
             engine=result["engine"],
-            execution_time_ms=result["execution_time_ms"],
+            cpu_time_ms=result["cpu_time_ms"],
             processed_items=result["processed_items"],
         )
 

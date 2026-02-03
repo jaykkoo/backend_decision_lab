@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-blue
+  namespace: decision-lab
+spec:
+  replicas: 9
+  selector:
+    app: django
+    matchLabels:
+      app: django
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: django
+        version: blue
+    spec:
+      containers:
+        - name: django
+          image: registry.digitalocean.com/decision-lab-registry/django:blue
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: backend-env

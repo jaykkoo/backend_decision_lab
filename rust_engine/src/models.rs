@@ -1,5 +1,5 @@
+// src/models.rs
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Deserialize)]
 pub struct Job {
@@ -10,13 +10,22 @@ pub struct Job {
 #[derive(Debug, Deserialize)]
 pub struct JobPayload {
     pub engine: String,
-    pub limit: usize,
+    pub limit: Option<usize>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
+pub struct ProductViewStat {
+    pub product_id: i64,
+    pub views: u64,
+    pub average_age: f64,
+}
+
+#[derive(Serialize)]
 pub struct JobResult {
-    pub engine: String,              // "rust"
-    pub processed_items: usize,      // ex: 10000
-    pub average_age: f64,            // résultat métier
-    pub execution_time_ms: f64,      // temps total
+    pub engine: String,
+    pub processed_items: usize,
+    pub products_count: usize,
+    pub cpu_time_ms: f64,
+    pub memory_mb_peak: f64,
+    pub views_by_product: Vec<ProductViewStat>,
 }

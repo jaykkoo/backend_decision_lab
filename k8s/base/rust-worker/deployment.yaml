@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rust-worker
+  namespace: decision-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rust-worker
+  template:
+    metadata:
+      labels:
+        app: rust-worker
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: rust-worker
+          image: registry.digitalocean.com/decision-lab/rust-worker:latest
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"

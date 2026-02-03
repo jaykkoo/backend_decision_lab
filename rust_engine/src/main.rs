@@ -1,8 +1,3 @@
-// fn main() {
-//     panic!("THIS IS THE REAL BINARY");
-// }
-
-
 use axum::{routing::get, Router};
 use tokio::net::TcpListener;
 use tracing_subscriber::{fmt, EnvFilter};
@@ -12,6 +7,9 @@ mod models;
 
 #[tokio::main]
 async fn main() {
+    println!("=== MAIN START ===");
+    println!("MODE = {:?}", std::env::var("MODE"));
+
     // 🔧 Logger (UNE SEULE FOIS, avant tout)
     fmt()
         .with_env_filter(
@@ -30,6 +28,7 @@ async fn main() {
     // =====================
     if mode == "worker" {
         tracing::info!("Running in WORKER mode");
+        println!("=== ENTER WORKER MODE ===");
 
         // ⛔ DOIT BLOQUER À VIE
         workers::run_worker().await;
@@ -53,3 +52,5 @@ async fn main() {
         .await
         .expect("Server failed");
 }
+
+

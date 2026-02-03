@@ -1,46 +1,94 @@
-import time
-import httpx
+import resource
 from celery import shared_task
-from users.models import User
 from django.conf import settings
-from django.db.models import Avg
+import httpx
+
+from products.models import ProductView
+
+
+def get_cpu_and_memory():
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+
+    cpu_time_sec = usage.ru_utime + usage.ru_stime
+    memory_mb = usage.ru_maxrss / 1024  # Linux: KB → MB
+
+    return cpu_time_sec, memory_mb
+
 
 @shared_task(bind=True)
-def compute_average_age(self, job_id, limit):
-    import time
-    start = time.perf_counter()
+def compute_product_views_analytics(self, job_id, limit=None):
+    """
+    Analyse ProductView:
+    - nombre de vues par produit
+    - âge moyen des viewers
+    - mesure CPU + RAM
+    """
 
-    qs = User.objects.exclude(age=None).values_list("age", flat=True)[:limit]
+    # --------------------------------------------------
+    # 🔥 FETCH DATA (hors mesure CPU)
+    # --------------------------------------------------
+    qs = (
+        ProductView.objects
+        .select_related("user")
+        .exclude(user__age=None)
+        .values("product_id", "user__age")
+    )
 
-    ages = list(qs)
-    if not ages:
-        raise ValueError("No users found")
+    if limit:
+        qs = qs[:limit]
 
-    total = sum(ages)
-    average = total / len(ages)
+    rows = list(qs)
 
-    execution_time_ms = (time.perf_counter() - start) * 1000
+    if not rows:
+        raise ValueError("No product views found")
+
+    # --------------------------------------------------
+    # 🔥 CPU-BOUND SECTION
+    # --------------------------------------------------
+    cpu_start, _ = get_cpu_and_memory()
+
+    stats = {}
+
+    for r in rows:
+        pid = r["product_id"]
+        age = r["user__age"]
+
+        s = stats.setdefault(
+            pid,
+            {"views": 0, "age_sum": 0}
+        )
+
+        s["views"] += 1
+        s["age_sum"] += age
+
+    results = [
+        {
+            "product_id": pid,
+            "views": s["views"],
+            "average_age": s["age_sum"] / s["views"],
+        }
+        for pid, s in stats.items()
+    ]
+
+    cpu_end, mem_end = get_cpu_and_memory()
+    # --------------------------------------------------
 
     result = {
         "engine": "celery",
-        "average_age": average,
-        "processed_items": len(ages),
-        "execution_time_ms": execution_time_ms,
+        "processed_items": len(rows),
+        "products_count": len(results),
+        "cpu_time_ms": (cpu_end - cpu_start) * 1000,
+        "memory_mb_peak": mem_end,
+        "views_by_product": results,
     }
 
-    try:
-        import httpx
-        from django.conf import settings
-
-        r = httpx.post(
-            f"{settings.API_BASE_URL}/jobs/{job_id}/complete/",
-            json={"status": "DONE", "result": result},
-            timeout=5.0,
-        )
-        r.raise_for_status()
-    except Exception as e:
-        print("❌ CALLBACK FAILED:", e)
-        raise
+    # --------------------------------------------------
+    # 📤 CALLBACK DJANGO
+    # --------------------------------------------------
+    httpx.post(
+        f"{settings.API_BASE_URL}/jobs/{job_id}/complete/",
+        json={"status": "DONE", "result": result},
+        timeout=5.0,
+    )
 
     return result
-

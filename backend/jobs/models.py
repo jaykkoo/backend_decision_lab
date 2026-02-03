@@ -23,7 +23,8 @@ class JobRun(models.Model):
         related_name="runs",
     )
     engine = models.CharField(max_length=20, null=True, blank=True)
-    execution_time_ms = models.FloatField(null=True, blank=True)
+    cpu_time_ms = models.FloatField(null=True, blank=True)
+    memory_mb_peak = models.FloatField(null=True, blank=True)
     processed_items = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     average_age = models.FloatField(null=True, blank=True)

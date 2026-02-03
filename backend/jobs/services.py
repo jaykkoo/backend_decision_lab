@@ -6,7 +6,7 @@ from django.db import connection
 import json
 import redis
 from django.conf import settings
-from .tasks import compute_average_age
+from .tasks import compute_product_views_analytics
 
 
 def enqueue_job(job):
@@ -15,7 +15,7 @@ def enqueue_job(job):
 
     if engine == "celery":
         # 🐍 Celery worker
-        compute_average_age.delay(str(job.id), limit)
+        compute_product_views_analytics.delay(str(job.id), limit)
 
     elif engine == "rust":
         # 🦀 Rust worker (Redis queue)
@@ -27,7 +27,6 @@ def enqueue_job(job):
                 "payload": job.payload,
             })
         )
-
     else:
         raise ValueError(f"Unknown engine: {engine}")
 

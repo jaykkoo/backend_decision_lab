@@ -51,6 +51,7 @@ services:
       DATABASE_URL: postgres://app:app@postgres:5432/app
       REDIS_URL: redis://redis:6379
       DJANGO_CALLBACK_URL: http://django:8000/api/v1
+    restart: "no"
     depends_on:
       - postgres
       - redis
