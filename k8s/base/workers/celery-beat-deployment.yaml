@@ -13,12 +13,20 @@ spec:
       labels:
         app: celery-beat
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: celery-beat
-          image: registry.digitalocean.com/decision-lab/django:latest
+          image: registry.digitalocean.com/decision-lab/django:IMAGE_TAG
           command: ["celery", "-A", "config", "beat", "-l", "info"]
           envFrom:
             - configMapRef:
                 name: backend-config
             - secretRef:
                 name: backend-secrets
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

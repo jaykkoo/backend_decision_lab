@@ -13,10 +13,10 @@ spec:
       labels:
         app: rust-worker
     spec:
-      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
       containers:
         - name: rust-worker
-          image: registry.digitalocean.com/decision-lab/rust-worker:latest
+          image: registry.digitalocean.com/decision-lab/rust-worker:IMAGE_TAG
           envFrom:
             - configMapRef:
                 name: backend-config

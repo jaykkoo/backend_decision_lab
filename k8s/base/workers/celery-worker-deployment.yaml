@@ -13,12 +13,20 @@ spec:
       labels:
         app: celery-worker
     spec:
+      terminationGracePeriodSeconds: 60
       containers:
-        - name: celery
-          image: registry.digitalocean.com/decision-lab/django:latest
+        - name: celery-worker
+          image: registry.digitalocean.com/decision-lab/django:IMAGE_TAG
           command: ["celery", "-A", "config", "worker", "-l", "info"]
           envFrom:
             - configMapRef:
                 name: backend-config
             - secretRef:
                 name: backend-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

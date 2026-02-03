@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import HealthCheckView
+from .views import health
 
 urlpatterns = [
-    path("health/", HealthCheckView.as_view(), name="health-check"),
+    path("health", health),
 ]

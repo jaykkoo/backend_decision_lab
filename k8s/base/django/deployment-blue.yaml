@@ -4,9 +4,8 @@ metadata:
   name: django-blue
   namespace: decision-lab
 spec:
-  replicas: 9
+  replicas: 2
   selector:
-    app: django
     matchLabels:
       app: django
       version: blue
@@ -16,11 +15,31 @@ spec:
         app: django
         version: blue
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: django
-          image: registry.digitalocean.com/decision-lab-registry/django:blue
+          image: registry.digitalocean.com/decision-lab/django:IMAGE_TAG
           ports:
             - containerPort: 8000
           envFrom:
             - secretRef:
-                name: backend-env
+                name: backend-secrets
+          readinessProbe:
+            httpGet:
+              path: /api/v1/system/health/
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/v1/system/health/
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
