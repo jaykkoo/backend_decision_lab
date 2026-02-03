@@ -50,19 +50,23 @@ jobs:
         mkdir -p ~/.kube
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
+    - name: Verify cluster access
+      run: kubectl get nodes
+
+
     # ------------------------
     # Namespace
     # ------------------------
     - name: Apply Namespace
-      run: |
-        kubectl apply -f k8s/namespace.yaml
+      run: kubectl apply -f k8s/namespace.yaml
+    
     - name: Apply ConfigMap
-      run: kubectl apply -f k8s/base/configmap.yaml
+      run: kubectl apply -f k8s/configmap.yaml
     
     - name: Apply Cluster Issuer
-      run: kubectl apply -f k8s/base/cluster-issuer.yaml
+      run: kubectl apply -f k8s/cluster-issuer.yaml
     - name: Apply Ingress
-      run: kubectl apply -f k8s/base/ingress.yaml
+      run: kubectl apply -f k8s/ingress.yaml
     # ------------------------
     # Secrets
     # ------------------------
