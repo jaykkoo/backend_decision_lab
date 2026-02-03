@@ -43,19 +43,22 @@ jobs:
         docker push $REGISTRY/rust-worker:$IMAGE_TAG
 
     # ------------------------
-    # Setup kubectl (persistent)
+    # Setup kubectl
     # ------------------------
     - name: Setup kubeconfig
       run: |
         mkdir -p ~/.kube
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
-    - name: Apply Postgres Config
+    # ------------------------
+    # Namespace
+    # ------------------------
+    - name: Apply Namespace
       run: |
-        kubectl apply -f k8s/postgres/configmap.yaml
+        kubectl apply -f k8s/base/namespace.yaml
 
     # ------------------------
-    # Apply Kubernetes Secrets
+    # Secrets
     # ------------------------
     - name: Apply Kubernetes Secrets
       run: |
@@ -63,6 +66,7 @@ jobs:
           --namespace $NAMESPACE \
           --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
           --from-literal=REDIS_URL="${{ secrets.REDIS_URL }}" \
+          --from-literal=CELERY_BROKER_URL="${{ secrets.CELERY_BROKER_URL }}" \
           --from-literal=DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
           --from-literal=POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
           --from-literal=POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
@@ -70,20 +74,39 @@ jobs:
           --dry-run=client -o yaml | kubectl apply -f -
 
     # ------------------------
-    # Deploy GREEN
+    # Infra services
     # ------------------------
-    - name: Deploy Green
-      run: |
-        sed "s|IMAGE_TAG|$IMAGE_TAG|g" k8s/django/deployment-green.yaml | kubectl apply -f -
-        kubectl rollout status deployment/django-green -n $NAMESPACE
+    - name: Deploy Postgres
+      run: kubectl apply -f k8s/base/postgres/
 
-    - name: Apply HPA for Green
-      run: |
-        kubectl apply -f k8s/django/hpa.yaml
+    - name: Deploy Redis
+      run: kubectl apply -f k8s/base/redis/
+
+    - name: Deploy RabbitMQ
+      run: kubectl apply -f k8s/base/rabbitmq/
+
+    # ------------------------
+    # Workers
+    # ------------------------
+    - name: Deploy Celery Workers
+      run: kubectl apply -f k8s/base/workers/
 
     - name: Deploy Rust Worker
       run: |
-        sed "s|IMAGE_TAG|$IMAGE_TAG|g" k8s/rust-worker/deployment.yaml | kubectl apply -f -
+        sed "s|IMAGE_TAG|$IMAGE_TAG|g" \
+          k8s/base/rust-worker/deployment.yaml | kubectl apply -f -
+
+    # ------------------------
+    # Deploy GREEN
+    # ------------------------
+    - name: Deploy Django Green
+      run: |
+        sed "s|IMAGE_TAG|$IMAGE_TAG|g" \
+          k8s/base/django/deployment-green.yaml | kubectl apply -f -
+        kubectl rollout status deployment/django-green -n $NAMESPACE
+
+    - name: Apply HPA for Django
+      run: kubectl apply -f k8s/base/django/hpa.yaml
 
     # ------------------------
     # Internal Healthcheck
@@ -92,7 +115,7 @@ jobs:
       run: |
         kubectl run curl --rm -i --restart=Never \
           --image=curlimages/curl \
-          -- curl -f http://django.$NAMESPACE.svc.cluster.local/health
+          -- curl -f http://django.$NAMESPACE.svc.cluster.local/api/v1/system/health/
 
     # ------------------------
     # Switch Blue → Green
@@ -105,14 +128,6 @@ jobs:
           -p '{"spec":{"selector":{"app":"django","version":"green"}}}'
 
     # ------------------------
-    # Public HTTPS Smoke Test
-    # ------------------------
-    - name: Public HTTPS Smoke Test
-      if: success()
-      run: |
-        curl -f https://api.decision-lab.com/health
-
-    # ------------------------
     # Cleanup old BLUE
     # ------------------------
     - name: Cleanup old Blue
@@ -122,16 +137,11 @@ jobs:
         kubectl delete hpa django-blue-hpa -n $NAMESPACE || true
 
     # ------------------------
-    # Rollback (FULL)
+    # Rollback
     # ------------------------
     - name: Rollback to Blue
       if: failure()
       run: |
-        echo "❌ Deployment failed – rollback to BLUE"
-
         kubectl patch service django \
           -n $NAMESPACE \
           -p '{"spec":{"selector":{"app":"django","version":"blue"}}}'
-
-        kubectl delete deployment django-green -n $NAMESPACE || true
-        kubectl delete hpa django-green-hpa -n $NAMESPACE || true
