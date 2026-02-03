@@ -16,8 +16,6 @@ spec:
         version: green
     spec:
       terminationGracePeriodSeconds: 30
-      imagePullSecrets:
-        - name: do-registry
       containers:
         - name: django
           image: registry.digitalocean.com/decision-lab/django:IMAGE_TAG
