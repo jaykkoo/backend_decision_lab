@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: backend-config
+  name: backend-backend-secrets 
   namespace: decision-lab
 data:
   DJANGO_SETTINGS_MODULE: config.settings.prod
