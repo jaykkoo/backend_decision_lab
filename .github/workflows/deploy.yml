@@ -55,8 +55,14 @@ jobs:
     # ------------------------
     - name: Apply Namespace
       run: |
-        kubectl apply -f k8s/base/namespace.yaml
-
+        kubectl apply -f k8s/namespace.yaml
+    - name: Apply ConfigMap
+      run: kubectl apply -f k8s/base/configmap.yaml
+    
+    - name: Apply Cluster Issuer
+      run: kubectl apply -f k8s/base/cluster-issuer.yaml
+    - name: Apply Ingress
+      run: kubectl apply -f k8s/base/ingress.yaml
     # ------------------------
     # Secrets
     # ------------------------
