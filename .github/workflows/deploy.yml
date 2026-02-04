@@ -42,6 +42,10 @@ jobs:
         docker build -t $REGISTRY/rust-worker:$IMAGE_TAG ./rust_engine
         docker push $REGISTRY/rust-worker:$IMAGE_TAG
 
+    - name: Test base64 validity
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d | head -n 5
+
     # ------------------------
     # Setup kubectl
     # ------------------------
@@ -49,6 +53,7 @@ jobs:
       run: |
         mkdir -p ~/.kube
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
 
     - name: Verify cluster access
       run: kubectl get nodes
@@ -66,7 +71,7 @@ jobs:
     - name: Apply Cluster Issuer
       run: kubectl apply -f k8s/cluster-issuer.yaml --validate=false
     - name: Apply Ingress
-      run: kubectl apply -f k8s/ingress.yaml --validate=false
+      run: kubectl apply -f k8s/ingress.yaml 
     # ------------------------
     # Secrets
     # ------------------------
