@@ -42,9 +42,10 @@ jobs:
         docker build -t $REGISTRY/rust-worker:$IMAGE_TAG ./rust_engine
         docker push $REGISTRY/rust-worker:$IMAGE_TAG
 
-    - name: Test base64 validity
-      run: |
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d | head -n 5
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DO_REGISTRY_TOKEN }}
 
     # ------------------------
     # Setup kubectl
@@ -54,10 +55,8 @@ jobs:
         mkdir -p ~/.kube
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
-
     - name: Verify cluster access
       run: kubectl get nodes
-
 
     # ------------------------
     # Namespace
