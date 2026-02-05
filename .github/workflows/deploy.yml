@@ -147,6 +147,16 @@ jobs:
         sed "s|IMAGE_TAG|$IMAGE_TAG|g" \
           k8s/base/rust-worker/deployment.yaml | kubectl apply -f -
 
+
+    # ------------------------
+    # Bootstrap BLUE (safe & idempotent)
+    # ------------------------
+    - name: Deploy Django BLUE (bootstrap)
+      run: |
+        sed "s|IMAGE_TAG|$IMAGE_TAG|g" \
+          k8s/base/django/deployment-blue.yaml | kubectl apply -f -
+        kubectl rollout status deployment/django-blue -n $NAMESPACE
+
     # ------------------------
     # Service Django (UNE FOIS)
     # ------------------------
