@@ -50,6 +50,7 @@ jobs:
     - name: Fetch kubeconfig
       run: |
         doctl kubernetes cluster kubeconfig save k8s-rust
+      
 
     - name: Verify cluster access
       run: kubectl get nodes
@@ -63,8 +64,13 @@ jobs:
     - name: Apply ConfigMap
       run: kubectl apply -f k8s/configmap.yaml --validate=false
     
+    - name: Install cert-manager
+      run: |
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+
     - name: Apply Cluster Issuer
       run: kubectl apply -f k8s/cluster-issuer.yaml --validate=false
+      
     - name: Apply Ingress
       run: kubectl apply -f k8s/ingress.yaml 
     # ------------------------
