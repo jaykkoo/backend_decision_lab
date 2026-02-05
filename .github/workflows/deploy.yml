@@ -8,7 +8,7 @@ on:
 env:
   REGISTRY: registry.digitalocean.com/decision-lab
   NAMESPACE: decision-lab
-  IMAGE_TAG=${IMAGE_TAG}
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   deploy:
