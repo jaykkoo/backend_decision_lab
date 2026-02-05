@@ -64,13 +64,22 @@ jobs:
     - name: Apply ConfigMap
       run: kubectl apply -f k8s/configmap.yaml --validate=false
     
+    # ------------------------
+    # cert-manager (TLS)
+    # ------------------------
     - name: Install cert-manager
       run: |
         kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
 
+    - name: Wait for cert-manager to be ready
+      run: |
+        kubectl rollout status deployment/cert-manager -n cert-manager
+        kubectl rollout status deployment/cert-manager-webhook -n cert-manager
+        kubectl rollout status deployment/cert-manager-cainjector -n cert-manager
+
     - name: Apply Cluster Issuer
-      run: kubectl apply -f k8s/cluster-issuer.yaml --validate=false
-      
+      run: kubectl apply -f k8s/cluster-issuer.yaml
+
     - name: Apply Ingress
       run: kubectl apply -f k8s/ingress.yaml 
     # ------------------------
