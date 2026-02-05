@@ -148,6 +148,12 @@ jobs:
           k8s/base/rust-worker/deployment.yaml | kubectl apply -f -
 
     # ------------------------
+    # Service Django (UNE FOIS)
+    # ------------------------
+    - name: Apply Django Service
+      run: kubectl apply -f k8s/base/django/service.yaml
+
+    # ------------------------
     # Deploy GREEN
     # ------------------------
     - name: Deploy Django Green
