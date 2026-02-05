@@ -47,13 +47,9 @@ jobs:
       with:
         token: ${{ secrets.DO_REGISTRY_TOKEN }}
 
-    # ------------------------
-    # Setup kubectl
-    # ------------------------
-    - name: Setup kubeconfig
+    - name: Fetch kubeconfig
       run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+        doctl kubernetes cluster kubeconfig save decision-lab
 
     - name: Verify cluster access
       run: kubectl get nodes
