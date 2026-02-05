@@ -98,6 +98,28 @@ jobs:
           --from-literal=POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
           --dry-run=client -o yaml | kubectl apply -f -
 
+    # ------------------------
+    # Registry access for K8s
+    # ------------------------
+    - name: Create registry pull secret
+      env:
+        DO_REGISTRY_TOKEN: ${{ secrets.DO_REGISTRY_TOKEN }}
+      run: |
+        kubectl create secret docker-registry do-registry \
+          --docker-server=registry.digitalocean.com \
+          --docker-username=do \
+          --docker-password="$DO_REGISTRY_TOKEN" \
+          --docker-email=dev@gutdev.com \
+          -n $NAMESPACE \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Attach registry secret to ServiceAccount
+      run: |
+        kubectl patch serviceaccount default \
+          -n $NAMESPACE \
+          -p '{"imagePullSecrets":[{"name":"do-registry"}]}'
+
+
 
     - name: Verify image exists
       run: |
