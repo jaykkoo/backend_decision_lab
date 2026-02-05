@@ -8,7 +8,7 @@ on:
 env:
   REGISTRY: registry.digitalocean.com/decision-lab
   NAMESPACE: decision-lab
-  IMAGE_TAG: ${{ github.sha }}
+  IMAGE_TAG=${IMAGE_TAG::7}
 
 jobs:
   deploy:
@@ -87,6 +87,10 @@ jobs:
           --from-literal=POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
           --dry-run=client -o yaml | kubectl apply -f -
 
+
+    - name: Verify image exists
+      run: |
+        docker manifest inspect $REGISTRY/django:$IMAGE_TAG
     # ------------------------
     # Infra services
     # ------------------------
