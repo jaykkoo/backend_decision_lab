@@ -49,7 +49,7 @@ jobs:
 
     - name: Fetch kubeconfig
       run: |
-        doctl kubernetes cluster kubeconfig save decision-lab
+        doctl kubernetes cluster kubeconfig save k8s-rust
 
     - name: Verify cluster access
       run: kubectl get nodes
