@@ -6,7 +6,7 @@ metadata:
 data:
   DJANGO_SETTINGS_MODULE: config.settings.prod
   DJANGO_DEBUG: "false"
-  DJANGO_ALLOWED_HOSTS: "api.decision-lab.com"
+  DJANGO_ALLOWED_HOSTS: "api.decision-lab.com, .svc.cluster.local"
 
   # Django
   DJANGO_TIME_ZONE: Europe/Paris
