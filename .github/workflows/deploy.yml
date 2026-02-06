@@ -157,7 +157,10 @@ jobs:
     # Workers
     # ------------------------
     - name: Deploy Celery Workers
-      run: kubectl apply -f k8s/base/workers/
+      run: |
+        for file in k8s/base/workers/*.yaml; do
+          sed "s|IMAGE_TAG|$IMAGE_TAG|g" "$file" | kubectl apply -f -
+        done
 
     - name: Deploy Rust Worker
       run: |

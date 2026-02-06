@@ -23,7 +23,7 @@ spec:
             - containerPort: 8000
           envFrom:
             - configMapRef:
-                  name: backend-backend-secrets
+                  name: backend-config
             - secretRef:
                 name: backend-secrets
           readinessProbe:
