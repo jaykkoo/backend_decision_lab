@@ -12,10 +12,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - api.decision-lab.com
+        - api.rustcomparator.com
       secretName: decision-lab-tls
   rules:
-    - host: api.decision-lab.com
+    - host: api.rustcomparator.com
       http:
         paths:
           - path: /

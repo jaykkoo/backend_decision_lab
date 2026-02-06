@@ -55,6 +55,23 @@ jobs:
     - name: Verify cluster access
       run: kubectl get nodes
 
+    - name: Install Helm
+      uses: azure/setup-helm@v4
+
+    - name: Install ingress-nginx
+      run: |
+        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+        helm repo update
+
+        helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          --namespace ingress-nginx \
+          --create-namespace \
+          --set controller.service.type=LoadBalancer
+    - name: Wait for ingress-nginx to be ready
+      run: |
+        kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx
+        kubectl get svc -n ingress-nginx
+
     # ------------------------
     # Namespace
     # ------------------------
